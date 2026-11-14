@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M7M – Móc Khóa In 3D Thiết Kế Riêng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Space Grotesk"', 'sans-serif'],
+            body: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            pri: { 50:'#f5f3ff',100:'#ede9fe',200:'#ddd6fe',300:'#c4b5fd',400:'#a78bfa',500:'#8b5cf6',600:'#7c3aed',700:'#6d28d9',800:'#5b21b6',900:'#4c1d95' },
+            neon: { lime:'#a3e635', pink:'#f472b6', sky:'#38bdf8', orange:'#fb923c' },
+          },
+          borderRadius: { '4xl':'2rem' },
+        }
+      }
+    }
+  </script>
+  <style>
+    *{box-sizing:border-box}
+    ::selection{background:#8b5cf6;color:#fff}
+    body{-webkit-font-smoothing:antialiased}
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#c4b5fd;border-radius:99px}
+    ::-webkit-scrollbar-thumb:hover{background:#8b5cf6}
+
+    /* Animated gradient mesh background */
+    .mesh-bg {
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(139,92,246,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 60% at 80% 20%, rgba(56,189,248,0.1) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 60% 80%, rgba(244,114,182,0.08) 0%, transparent 70%);
+    }
+
+    /* Noise texture overlay */
+    .noise::before {
+      content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.025;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
+
+    /* Smooth card hover lift */
+    .card-lift { transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1); }
+    .card-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(139,92,246,0.15); }
+
+    /* Glow ring on focus */
+    .input-glow:focus { box-shadow: 0 0 0 3px rgba(139,92,246,0.2); }
+
+    /* Animated gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, #7c3aed 0%, #38bdf8 50%, #f472b6 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Pill badge shimmer */
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    .shimmer-badge {
+      background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 40%, #c4b5fd 50%, #a78bfa 60%, #7c3aed 100%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    /* Floating blobs */
+    @keyframes float1 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-20px) scale(1.05)} 66%{transform:translate(-20px,15px) scale(0.97)} }
+    @keyframes float2 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-25px,20px) scale(1.04)} 66%{transform:translate(15px,-25px) scale(0.96)} }
+    .blob-1 { animation: float1 12s ease-in-out infinite; }
+    .blob-2 { animation: float2 15s ease-in-out infinite; }
+
+    /* Qty button press */
+    .qty-btn:active { transform: scale(0.88); }
+  </style>
+</head>
+
+<body class="bg-[#faf9fc] font-body text-slate-800 noise min-h-screen flex flex-col">
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="relative z-20 bg-pri-600 text-white text-[11px] sm:text-xs py-2 px-4 text-center font-semibold tracking-wide overflow-hidden">
+    <div class="absolute inset-0 shimmer-badge opacity-60"></div>
+    <span class="relative z-10 flex items-center justify-center gap-2 flex-wrap">
+      <span class="bg-white/20 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">🔥 Ưu Đãi Combo</span>
+      Mua 2 móc khóa (Clicky / MDC) chỉ 90k (Không tính Custom) · Tặng kèm sticker M7M cực chất!
+    </span>
+  </div>
+
+  <!-- ===== HEADER ===== -->
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2.5 group">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-pri-600 to-neon-sky flex items-center justify-center text-white font-display font-bold text-base sm:text-lg shadow-lg shadow-pri-500/25 group-hover:scale-110 transition-transform duration-300">
+          M7
+        </div>
+        <div class="hidden min-[360px]:block">
+          <span class="font-display font-bold text-base sm:text-lg tracking-tight text-slate-900">M7M</span>
+          <p class="text-[10px] text-slate-400 font-medium -mt-0.5 tracking-wide">Break Limits · Create Beyond</p>
+        </div>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-1">
+        <a href="#materials" class="px-3 py-1.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-pri-700 hover:bg-pri-50 transition-all">Chất liệu</a>
+        <a href="#products" class="px-3 py-1.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-pri-700 hover:bg-pri-50 transition-all">Sản phẩm</a>
+        <a href="#order-form" class="px-3 py-1.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-pri-700 hover:bg-pri-50 transition-all">Đặt hàng</a>
+        <a href="#policy" class="px-3 py-1.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-pri-700 hover:bg-pri-50 transition-all">Chính sách</a>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <button onclick="openAdminModal()" class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold flex items-center gap-1.5 transition-all">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Admin</span>
+          <span id="nav-order-count" class="min-w-[18px] h-[18px] flex items-center justify-center bg-pri-600 text-white text-[10px] font-bold rounded-full">0</span>
+        </button>
+        <a href="#order-form" class="h-9 px-4 rounded-xl bg-pri-600 hover:bg-pri-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-pri-500/20 transition-all active:scale-95">
+          <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+          Đặt mua
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="relative overflow-hidden mesh-bg border-b border-slate-200/50">
+    <!-- Floating Blobs -->
+    <div class="blob-1 absolute -top-20 -left-20 w-72 h-72 rounded-full bg-pri-400/10 blur-3xl pointer-events-none"></div>
+    <div class="blob-2 absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-neon-sky/10 blur-3xl pointer-events-none"></div>
+
+    <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-14 pb-16 sm:pt-20 sm:pb-24 text-center">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-pri-200 shadow-sm mb-5">
+        <span class="w-2 h-2 rounded-full bg-pri-500 animate-pulse"></span>
+        <span class="text-[11px] font-bold text-pri-700 uppercase tracking-wider">Công nghệ in 3D FDM</span>
+      </div>
+
+      <h1 class="font-display text-4xl sm:text-5xl md:text-[3.5rem] font-bold tracking-tight leading-[1.1] text-slate-900">
+        Móc Khóa In 3D<br>
+        <span class="gradient-text">Thiết Kế Đậm Chất Riêng</span>
+      </h1>
+
+      <p class="mt-5 text-slate-500 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+        Phụ kiện in 3D cá nhân hóa dành cho học sinh <strong class="text-slate-700">THPT Mạc Đĩnh Chi</strong>. Treo balo, chìa khóa, túi tote — bền bỉ, độc bản, cực chất.
+      </p>
+
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <a href="#order-form" class="h-12 px-7 rounded-2xl bg-pri-600 hover:bg-pri-700 text-white font-bold text-sm shadow-lg shadow-pri-500/25 flex items-center gap-2 transition-all active:scale-95">
+          <i data-lucide="edit-3" class="w-4 h-4"></i> Đặt hàng ngay
+        </a>
+        <a href="#materials" class="h-12 px-6 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm border border-slate-200 shadow-sm flex items-center gap-2 transition-all">
+          <i data-lucide="layers" class="w-4 h-4 text-pri-500"></i> Tìm hiểu chất liệu
+        </a>
+      </div>
+
+      <!-- Floating Feature Pills -->
+      <div class="mt-12 flex flex-wrap items-center justify-center gap-2.5 max-w-lg mx-auto">
+        <span class="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-600 shadow-sm flex items-center gap-1.5">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-emerald-500"></i> Đổi trả 1-1
+        </span>
+        <span class="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-600 shadow-sm flex items-center gap-1.5">
+          <i data-lucide="leaf" class="w-3.5 h-3.5 text-green-500"></i> Nhựa PLA sinh học
+        </span>
+        <span class="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-600 shadow-sm flex items-center gap-1.5">
+          <i data-lucide="shield" class="w-3.5 h-3.5 text-sky-500"></i> Nhựa PETG dẻo dai
+        </span>
+        <span class="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-600 shadow-sm flex items-center gap-1.5">
+          <i data-lucide="gift" class="w-3.5 h-3.5 text-pink-500"></i> Tặng kèm khoen móc
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SO SÁNH CHẤT LIỆU ===== -->
+  <section id="materials" class="py-16 sm:py-20 relative">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-12">
+        <span class="inline-block px-3 py-1 rounded-full bg-pri-100 text-pri-700 text-[11px] font-bold uppercase tracking-wider">So sánh chất liệu</span>
+        <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900 mt-3">Nhựa PLA hay PETG?</h2>
+        <p class="text-slate-400 text-sm mt-2 max-w-md mx-auto">Chọn đúng chất liệu giúp móc khóa bền đẹp nhất cho nhu cầu của bạn</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-5">
+        <!-- PLA -->
+        <div class="card-lift relative bg-white rounded-3xl p-6 sm:p-7 border border-pri-100 overflow-hidden group">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-pri-500 to-pri-300"></div>
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-11 h-11 rounded-2xl bg-pri-100 flex items-center justify-center text-xl">🌱</div>
+            <div>
+              <h3 class="font-display font-bold text-slate-900">Nhựa PLA</h3>
+              <span class="text-[10px] font-bold text-pri-700 bg-pri-100 px-2 py-0.5 rounded-full">Sinh học · Thân thiện</span>
+            </div>
+            <span class="ml-auto text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">Phổ biến</span>
+          </div>
+
+          <div class="space-y-2.5 text-[13px] text-slate-600">
+            <div class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-pri-500 flex-shrink-0 mt-0.5"></i><span>Màu tươi sáng, sắc nét, bóng mịn tự nhiên</span></div>
+            <div class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-pri-500 flex-shrink-0 mt-0.5"></i><span>Siêu nhẹ, không trĩu balo hay túi tote</span></div>
+            <div class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-pri-500 flex-shrink-0 mt-0.5"></i><span>Nguồn gốc tinh bột thực vật, an toàn cho da</span></div>
+            <div class="flex gap-2"><i data-lucide="thermometer" class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5"></i><span>Chịu nhiệt 55–60°C</span></div>
+          </div>
+
+          <div class="mt-5 p-3 rounded-2xl bg-pri-50 border border-pri-100 flex items-start gap-2">
+            <i data-lucide="backpack" class="w-4 h-4 text-pri-600 mt-0.5 flex-shrink-0"></i>
+            <p class="text-xs text-pri-800"><strong>Phù hợp:</strong> Balo đi học, túi tote, hộp bút, chìa khóa phòng KTX</p>
+          </div>
+        </div>
+
+        <!-- PETG -->
+        <div class="card-lift relative bg-white rounded-3xl p-6 sm:p-7 border border-sky-100 overflow-hidden group">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-neon-sky to-sky-300"></div>
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-11 h-11 rounded-2xl bg-sky-100 flex items-center justify-center text-xl">🛡️</div>
+            <div>
+              <h3 class="font-display font-bold text-slate-900">Nhựa PETG</h3>
+              <span class="text-[10px] font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-full">Kỹ thuật · Dẻo dai</span>
+            </div>
+            <span class="ml-auto text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-1 rounded-lg">Siêu bền</span>
+          </div>
+
+          <div class="space-y-2.5 text-[13px] text-slate-600">
+            <div class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-neon-sky flex-shrink-0 mt-0.5"></i><span>Chịu va đập mạnh, rơi rớt không lo gãy</span></div>
+            <div class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-neon-sky flex-shrink-0 mt-0.5"></i><span>Kháng nước 100%, kháng tia UV ngoài trời</span></div>
+            <div class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-neon-sky flex-shrink-0 mt-0.5"></i><span>Liên kết lớp in cực kỳ chặt chẽ</span></div>
+            <div class="flex gap-2"><i data-lucide="thermometer" class="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5"></i><span>Chịu nhiệt 75–80°C</span></div>
+          </div>
+
+          <div class="mt-5 p-3 rounded-2xl bg-sky-50 border border-sky-100 flex items-start gap-2">
+            <i data-lucide="bike" class="w-4 h-4 text-sky-600 mt-0.5 flex-shrink-0"></i>
+            <p class="text-xs text-sky-800"><strong>Phù hợp:</strong> Chìa khóa xe máy / xe đạp điện, balo thể thao nắng mưa</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SẢN PHẨM ===== -->
+  <section id="products" class="py-16 sm:py-20 bg-white border-y border-slate-100">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-12">
+        <span class="inline-block px-3 py-1 rounded-full bg-neon-pink/10 text-pink-600 text-[11px] font-bold uppercase tracking-wider">Bộ sưu tập & Ưu đãi</span>
+        <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900 mt-3">Sản Phẩm & Combo Móc Khóa M7M</h2>
+        <p class="text-slate-400 text-sm mt-2">Giá niêm yết rõ ràng · Tặng kèm khoen tròn hoặc khóa càng cua · Combo 2 chiếc siêu hời</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- COMBO 2 MÓC KHÓA (HIGHLIGHT) -->
+        <div class="card-lift bg-gradient-to-b from-amber-50/50 to-white rounded-3xl overflow-hidden border-2 border-amber-300/80 shadow-md flex flex-col relative">
+          <div class="relative h-44 bg-gradient-to-br from-amber-500 via-orange-500 to-pri-600 flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(255,255,255,0.2),transparent_60%)]"></div>
+            <div class="relative text-center">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-3xl shadow-lg">🔥</div>
+              <span class="mt-2 inline-block px-2.5 py-0.5 bg-amber-300 text-slate-900 text-[10px] font-black rounded-lg uppercase">Tiết kiệm 10k</span>
+            </div>
+            <span class="absolute top-3 right-3 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow">Hot Combo</span>
+          </div>
+          <div class="p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between">
+                <h3 class="font-display font-bold text-slate-900">Combo 2 Móc Khóa</h3>
+                <span class="font-display font-bold text-rose-600 text-lg">90k</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1.5">
+                Mua combo 2 chiếc bất kỳ (Clicky MDC hoặc MDC Classic). Tiết kiệm ngay 10k!
+              </p>
+              <div class="flex gap-1.5 mt-3 flex-wrap">
+                <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-lg font-bold">90k / 2 chiếc</span>
+                <span class="text-[10px] bg-rose-50 text-rose-600 px-2 py-0.5 rounded-lg font-semibold">Không tính Custom</span>
+              </div>
+            </div>
+            <button onclick="quickAdd('combo',1)" class="mt-4 w-full h-10 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Chọn Combo (90k)
+            </button>
+          </div>
+        </div>
+
+        <!-- Clicky -->
+        <div class="card-lift bg-[#faf9fc] rounded-3xl overflow-hidden border border-slate-200/80 flex flex-col">
+          <div class="relative h-44 bg-gradient-to-br from-pri-600 via-pri-500 to-neon-sky flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(255,255,255,0.15),transparent_60%)]"></div>
+            <div class="relative text-center">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center text-3xl shadow-lg">🔘</div>
+              <span class="mt-2 inline-block px-2.5 py-0.5 bg-white/90 text-pri-700 text-[10px] font-black rounded-lg uppercase">Clicky Switch</span>
+            </div>
+            <span class="absolute top-3 right-3 bg-neon-orange text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">Best-seller</span>
+          </div>
+          <div class="p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between">
+                <h3 class="font-display font-bold text-slate-900">Clicky "MDC"</h3>
+                <span class="font-display font-bold text-pri-600 text-lg">50k</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1.5">Nút bấm switch cơ Blue bấm "tạch tạch" giải tỏa căng thẳng, in logo MDC.</p>
+              <div class="flex gap-1.5 mt-3 flex-wrap">
+                <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg font-semibold">Fidget</span>
+                <span class="text-[10px] bg-pri-50 text-pri-600 px-2 py-0.5 rounded-lg font-semibold">Switch cơ</span>
+              </div>
+            </div>
+            <button onclick="quickAdd('clicky',1)" class="mt-4 w-full h-10 rounded-xl bg-pri-50 hover:bg-pri-600 text-pri-700 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm vào đơn
+            </button>
+          </div>
+        </div>
+
+        <!-- Classic MDC -->
+        <div class="card-lift bg-[#faf9fc] rounded-3xl overflow-hidden border border-slate-200/80 flex flex-col">
+          <div class="relative h-44 bg-gradient-to-br from-slate-900 via-slate-800 to-pri-900 flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(139,92,246,0.2),transparent_60%)]"></div>
+            <div class="relative text-center">
+              <div class="w-20 h-14 mx-auto rounded-xl bg-white/12 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white text-sm font-display font-bold tracking-wider px-2">MẠC ĐĨNH CHI</div>
+              <span class="mt-2 inline-block px-2.5 py-0.5 bg-pri-500/90 text-white text-[10px] font-bold rounded-lg uppercase">Chữ nổi 3D</span>
+            </div>
+            <span class="absolute top-3 right-3 bg-pri-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">MDC</span>
+          </div>
+          <div class="p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between">
+                <h3 class="font-display font-bold text-slate-900">"Mạc Đĩnh Chi"</h3>
+                <span class="font-display font-bold text-pri-600 text-lg">40k</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1.5">Thẻ tên trường THPT Mạc Đĩnh Chi in nổi 3D đa sắc màu, phong cách thanh lịch.</p>
+              <div class="flex gap-1.5 mt-3 flex-wrap">
+                <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg font-semibold">Thẻ tên</span>
+                <span class="text-[10px] bg-pri-50 text-pri-600 px-2 py-0.5 rounded-lg font-semibold">2 lớp màu</span>
+              </div>
+            </div>
+            <button onclick="quickAdd('classic',1)" class="mt-4 w-full h-10 rounded-xl bg-pri-50 hover:bg-pri-600 text-pri-700 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm vào đơn
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom -->
+        <div class="card-lift bg-[#faf9fc] rounded-3xl overflow-hidden border border-slate-200/80 flex flex-col">
+          <div class="relative h-44 bg-gradient-to-br from-neon-pink via-pri-500 to-pri-700 flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_40%_60%,rgba(255,255,255,0.12),transparent_60%)]"></div>
+            <div class="relative text-center">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center text-3xl shadow-lg">✨</div>
+              <span class="mt-2 inline-block px-2.5 py-0.5 bg-white/90 text-pink-600 text-[10px] font-black rounded-lg uppercase">Tên riêng</span>
+            </div>
+            <span class="absolute top-3 right-3 bg-neon-pink text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">Custom</span>
+          </div>
+          <div class="p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between">
+                <h3 class="font-display font-bold text-slate-900">Custom Tên</h3>
+                <span class="font-display font-bold text-pri-600 text-lg">45k</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1.5">In tên bạn, crush, biệt danh lớp, ngày kỷ niệm hoặc số áo theo yêu cầu.</p>
+              <div class="flex gap-1.5 mt-3 flex-wrap">
+                <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg font-semibold">Cá nhân hóa</span>
+                <span class="text-[10px] bg-pink-50 text-pink-500 px-2 py-0.5 rounded-lg font-semibold">Quà tặng</span>
+              </div>
+            </div>
+            <button onclick="quickAdd('custom',1)" class="mt-4 w-full h-10 rounded-xl bg-pri-50 hover:bg-pri-600 text-pri-700 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm vào đơn
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FORM ĐẶT HÀNG ===== -->
+  <section id="order-form" class="py-16 sm:py-20 mesh-bg relative">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 relative z-10">
+      <div class="text-center mb-10">
+        <span class="inline-block px-3 py-1 rounded-full bg-pri-100 text-pri-700 text-[11px] font-bold uppercase tracking-wider">Form đặt hàng</span>
+        <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900 mt-3">Điền Thông Tin Đặt Hàng</h2>
+        <p class="text-slate-400 text-sm mt-2">Vui lòng điền đầy đủ để shop chuẩn bị phôi in và bàn giao sớm nhất nhé!</p>
+      </div>
+
+      <form id="keychainOrderForm" onsubmit="handleFormSubmit(event)" class="space-y-5">
+
+        <!-- Xác nhận chính sách -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-pri-200 relative overflow-hidden shadow-sm">
+          <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pri-500 via-neon-pink to-neon-sky"></div>
+          <div class="flex items-start gap-3">
+            <div class="w-9 h-9 rounded-xl bg-pri-100 text-pri-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <i data-lucide="file-check" class="w-4 h-4"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-display font-bold text-slate-900 text-sm">Chính Sách Đổi Trả <span class="text-rose-500">*</span></h3>
+              <p class="text-xs text-slate-400 mt-1">M7M cam kết đổi mới 1-1 hoặc hoàn tiền trong 3–7 ngày nếu sản phẩm nứt gãy, sai mẫu. Yêu cầu: <strong class="text-slate-600">quay video unbox liền mạch rõ nét</strong>.</p>
+              <label class="mt-3 flex items-center gap-2.5 p-3 bg-pri-50/70 border border-pri-200 rounded-xl cursor-pointer hover:bg-pri-100/70 transition-colors">
+                <input type="checkbox" id="policyAgreed" required class="w-4 h-4 text-pri-600 rounded-md border-slate-300 focus:ring-pri-500">
+                <span class="text-xs font-bold text-pri-800">Tôi đã đọc và đồng ý với chính sách đổi trả của M7M <span class="text-rose-500">*</span></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thông tin cá nhân -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <h3 class="font-display font-bold text-slate-900 text-sm flex items-center gap-2">
+            <i data-lucide="user" class="w-4 h-4 text-pri-500"></i> Thông Tin Người Đặt
+          </h3>
+
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label for="fullName" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Họ và Tên <span class="text-rose-500">*</span></label>
+              <input type="text" id="fullName" required placeholder="Nguyễn Văn An" class="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm outline-none input-glow focus:border-pri-400 transition-all bg-white">
+            </div>
+            <div>
+              <label for="phone" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">SĐT / Zalo <span class="text-rose-500">*</span></label>
+              <input type="tel" id="phone" required placeholder="0901234567" class="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm outline-none input-glow focus:border-pri-400 transition-all bg-white">
+            </div>
+            <div>
+              <label for="studentClass" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Lớp <span class="text-rose-500">*</span> <span class="font-normal normal-case text-slate-400">(Không phải HS → ghi "Không")</span></label>
+              <input type="text" id="studentClass" required placeholder="12A1" class="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm outline-none input-glow focus:border-pri-400 transition-all bg-white">
+            </div>
+            <div>
+              <label for="schoolName" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Trường THPT <span class="font-normal normal-case text-slate-400">(nếu không phải MDC)</span></label>
+              <input type="text" id="schoolName" placeholder="Mặc định: THPT Mạc Đĩnh Chi" class="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm outline-none input-glow focus:border-pri-400 transition-all bg-white">
+            </div>
+          </div>
+
+          <div>
+            <label for="shippingAddress" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Địa Chỉ Giao Hàng <span class="font-normal normal-case text-slate-400">(hoặc nhận tại trường)</span></label>
+            <input type="text" id="shippingAddress" placeholder="Nhận tại cổng trường MDC giờ ra chơi, hoặc ghi địa chỉ nhà..." class="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm outline-none input-glow focus:border-pri-400 transition-all bg-white">
+          </div>
+        </div>
+
+        <!-- Chọn sản phẩm & số lượng -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-display font-bold text-slate-900 text-sm flex items-center gap-2">
+              <i data-lucide="package" class="w-4 h-4 text-pri-500"></i> Chọn Sản Phẩm & Số Lượng
+            </h3>
+            <span class="font-normal text-[11px] text-slate-400">Không mua → ghi 0</span>
+          </div>
+
+          <!-- BANNER COMBO 90K -->
+          <div class="p-3 bg-gradient-to-r from-amber-500/10 via-pri-500/10 to-neon-sky/10 border border-amber-300/60 rounded-2xl flex items-center gap-2.5 text-xs text-amber-900">
+            <span class="text-base flex-shrink-0">🔥</span>
+            <div>
+              <strong class="font-bold text-amber-800">Ưu Đãi Combo 2 Chiếc 90k:</strong> Mua 2 móc khóa (Clicky hoặc MDC Classic) giá chỉ <strong>90.000đ / cặp</strong> (Tiết kiệm 10k, không tính mẫu Custom).
+            </div>
+          </div>
+
+          <!-- Combo 2 Móc Khóa -->
+          <div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-50/80 to-pri-50/40 border border-amber-200/90">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 text-white flex items-center justify-center text-lg flex-shrink-0 shadow-sm">🔥</div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <h4 class="font-bold text-slate-800 text-sm truncate">Combo 2 Móc Khóa</h4>
+                  <span class="text-[9px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-full">Tiết kiệm 10k</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-rose-600 font-extrabold text-xs">90.000đ / combo (2 chiếc)</span>
+                  <span class="text-[10px] text-slate-400 line-through">100.000đ</span>
+                </div>
+                <p class="text-[10px] text-slate-500 truncate">Chọn 2 móc khóa Clicky / MDC, ghi chú mẫu bạn chọn bên dưới</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <button type="button" onclick="changeQty('qtyCombo',-1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">−</button>
+                <input type="number" id="qtyCombo" min="0" value="0" oninput="calculateTotal()" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
+                <button type="button" onclick="changeQty('qtyCombo',1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">+</button>
+              </div>
+              <span id="subtotalCombo" class="text-xs font-bold text-slate-500 w-16 text-right">0đ</span>
+            </div>
+          </div>
+
+          <!-- Clicky -->
+          <div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-pri-600 text-white flex items-center justify-center text-lg flex-shrink-0">🔘</div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-slate-800 text-sm truncate">Clicky "MDC" (Lẻ 1 chiếc)</h4>
+                <span class="text-pri-600 font-bold text-xs">50.000đ</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <button type="button" onclick="changeQty('qtyClicky',-1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">−</button>
+                <input type="number" id="qtyClicky" min="0" value="0" oninput="calculateTotal()" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
+                <button type="button" onclick="changeQty('qtyClicky',1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">+</button>
+              </div>
+              <span id="subtotalClicky" class="text-xs font-bold text-slate-500 w-16 text-right">0đ</span>
+            </div>
+          </div>
+
+          <!-- Classic -->
+          <div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-slate-800 text-white flex items-center justify-center text-lg flex-shrink-0">🏷️</div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-slate-800 text-sm truncate">"Mạc Đĩnh Chi" (Lẻ 1 chiếc)</h4>
+                <span class="text-pri-600 font-bold text-xs">40.000đ</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <button type="button" onclick="changeQty('qtyClassic',-1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">−</button>
+                <input type="number" id="qtyClassic" min="0" value="0" oninput="calculateTotal()" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
+                <button type="button" onclick="changeQty('qtyClassic',1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">+</button>
+              </div>
+              <span id="subtotalClassic" class="text-xs font-bold text-slate-500 w-16 text-right">0đ</span>
+            </div>
+          </div>
+
+          <!-- Custom -->
+          <div class="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-neon-pink text-white flex items-center justify-center text-lg flex-shrink-0">✨</div>
+                <div class="min-w-0">
+                  <h4 class="font-bold text-slate-800 text-sm truncate">Custom In Tên</h4>
+                  <span class="text-pri-600 font-bold text-xs">45.000đ</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <button type="button" onclick="changeQty('qtyCustom',-1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">−</button>
+                  <input type="number" id="qtyCustom" min="0" value="0" oninput="calculateTotal()" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
+                  <button type="button" onclick="changeQty('qtyCustom',1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">+</button>
+                </div>
+                <span id="subtotalCustom" class="text-xs font-bold text-slate-500 w-16 text-right">0đ</span>
+              </div>
+            </div>
+            <input type="text" id="customText" placeholder="Nội dung in tên: Hoàng Long - 12A3, Lily 2008..." class="w-full h-9 px-3 rounded-xl border border-slate-200 text-xs outline-none input-glow focus:border-pri-400 bg-white transition-all">
+          </div>
+        </div>
+
+        <!-- Ghi chú -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <h3 class="font-display font-bold text-slate-900 text-sm flex items-center gap-2">
+            <i data-lucide="message-square" class="w-4 h-4 text-pri-500"></i> Ghi Chú Cho Shop
+          </h3>
+          <textarea id="orderNote" rows="2" placeholder="Ví dụ: Giao trước thứ 6, đóng gói làm quà tặng giúp mình nhé..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none text-sm input-glow focus:border-pri-400 resize-none transition-all bg-white"></textarea>
+        </div>
+
+        <!-- Khảo sát -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <h3 class="font-display font-bold text-slate-900 text-sm flex items-center gap-2">
+            <i data-lucide="star" class="w-4 h-4 text-amber-400"></i> Khảo Sát Nhanh
+          </h3>
+
+          <div>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Bạn đánh giá thế nào về ý tưởng móc khóa in 3D của M7M?</label>
+            <div class="flex items-center gap-1" id="starContainer">
+              <button type="button" onclick="setRating(1)" class="star-btn p-0.5 text-slate-300 hover:text-amber-400 transition-colors" data-rating="1"><i data-lucide="star" class="w-6 h-6 fill-current"></i></button>
+              <button type="button" onclick="setRating(2)" class="star-btn p-0.5 text-slate-300 hover:text-amber-400 transition-colors" data-rating="2"><i data-lucide="star" class="w-6 h-6 fill-current"></i></button>
+              <button type="button" onclick="setRating(3)" class="star-btn p-0.5 text-slate-300 hover:text-amber-400 transition-colors" data-rating="3"><i data-lucide="star" class="w-6 h-6 fill-current"></i></button>
+              <button type="button" onclick="setRating(4)" class="star-btn p-0.5 text-slate-300 hover:text-amber-400 transition-colors" data-rating="4"><i data-lucide="star" class="w-6 h-6 fill-current"></i></button>
+              <button type="button" onclick="setRating(5)" class="star-btn p-0.5 text-amber-400 hover:text-amber-400 transition-colors" data-rating="5"><i data-lucide="star" class="w-6 h-6 fill-current"></i></button>
+              <span id="ratingLabel" class="text-xs font-bold text-amber-500 ml-2">5 sao – Tuyệt vời!</span>
+            </div>
+            <input type="hidden" id="surveyRating" value="5">
+          </div>
+
+          <div>
+            <label for="surveyFeedback" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Bạn muốn M7M làm thêm sản phẩm gì?</label>
+            <input type="text" id="surveyFeedback" placeholder="Giá đỡ điện thoại, hộp thẻ học sinh, charm balo, mô hình mini..." class="w-full h-10 px-3.5 rounded-xl border border-slate-200 outline-none text-sm input-glow focus:border-pri-400 bg-white transition-all">
+          </div>
+        </div>
+
+        <!-- Tổng tiền & Submit -->
+        <div class="rounded-3xl overflow-hidden shadow-lg shadow-pri-500/15">
+          <div class="bg-gradient-to-r from-pri-600 via-pri-500 to-neon-sky p-5 sm:p-6 text-white space-y-4">
+            <div class="flex items-center justify-between gap-3 border-b border-white/15 pb-4">
+              <div>
+                <span class="text-[10px] uppercase font-bold tracking-wider text-white/60">Tóm tắt</span>
+                <div class="text-base font-bold mt-0.5">
+                  Tổng: <span id="summaryTotalQty" class="font-black text-neon-lime">0</span> chiếc
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-white/60">Tạm tính</span>
+                <div id="summaryTotalPrice" class="font-display text-2xl sm:text-3xl font-bold text-neon-lime">0đ</div>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p class="text-[11px] text-white/70 flex items-center gap-1.5">
+                <i data-lucide="check-check" class="w-3.5 h-3.5 text-neon-lime flex-shrink-0"></i>
+                Thanh toán khi nhận hàng (COD) hoặc chuyển khoản
+              </p>
+              <button type="submit" id="submitBtn" class="w-full sm:w-auto h-12 px-8 rounded-2xl bg-white text-pri-700 hover:bg-neon-lime hover:text-slate-900 font-bold text-sm shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                <i data-lucide="send" class="w-4 h-4"></i> GỬI ĐƠN HÀNG
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== ACCORDION CHÍNH SÁCH ===== -->
+  <section id="policy" class="py-16 sm:py-20 bg-white border-t border-slate-100">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-10">
+        <span class="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold uppercase tracking-wider">Quyền lợi</span>
+        <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900 mt-3">Chính Sách & Bảo Quản</h2>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Đổi trả -->
+        <div class="rounded-2xl border border-slate-200 overflow-hidden">
+          <button type="button" onclick="toggleAccordion('acc-policy')" class="w-full p-4 sm:p-5 text-left bg-slate-50/70 hover:bg-slate-100/70 flex items-center justify-between font-bold text-slate-800 text-sm transition-colors">
+            <span class="flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-pri-500"></i> Chính Sách Đổi Trả 1-1 (3–7 Ngày)</span>
+            <i id="icon-acc-policy" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200"></i>
+          </button>
+          <div id="acc-policy" class="hidden border-t border-slate-100">
+            <div class="p-5 sm:p-6 text-xs sm:text-sm text-slate-600 space-y-4 leading-relaxed">
+              <div>
+                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5"><i data-lucide="clock" class="w-3.5 h-3.5 text-pri-500"></i> Thời gian:</h4>
+                <p class="mt-1">Hỗ trợ đổi mới hoặc hoàn tiền trong vòng <strong>3 – 7 ngày</strong> kể từ khi nhận hàng.</p>
+              </div>
+              <div>
+                <h4 class="font-bold text-emerald-700 text-sm flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5"></i> Được đổi trả:</h4>
+                <ul class="list-disc pl-5 mt-1 space-y-1">
+                  <li><strong>Giao sai sản phẩm:</strong> Sai mẫu, sai màu, sai chất liệu nhựa so với đơn đặt hàng.</li>
+                  <li><strong>Lỗi vận chuyển:</strong> Sản phẩm bị nứt, gãy, biến dạng nặng.</li>
+                  <li><strong>Lỗi kỹ thuật:</strong> Bung lớp in, lỗi kết cấu, thiếu phụ kiện (khoen, khóa càng cua).</li>
+                </ul>
+              </div>
+              <div>
+                <h4 class="font-bold text-rose-600 text-sm flex items-center gap-1.5"><i data-lucide="x" class="w-3.5 h-3.5"></i> Không áp dụng:</h4>
+                <ul class="list-disc pl-5 mt-1 space-y-1">
+                  <li>Hư hỏng do sử dụng hoặc bảo quản sai cách.</li>
+                  <li>Đơn custom in tên muốn đổi mẫu sau khi đã hoàn thiện in ấn (trừ lỗi từ M7M).</li>
+                  <li>Đường vân lớp (layer lines) đặc trưng in 3D FDM không ảnh hưởng thẩm mỹ & độ bền.</li>
+                </ul>
+              </div>
+              <div class="p-3.5 bg-amber-50 rounded-xl border border-amber-200">
+                <p class="text-xs text-amber-900">
+                  <strong>⚠ Bắt buộc:</strong> Có video unbox liền mạch, rõ nét, không cắt ghép. Sản phẩm chưa qua sử dụng, đầy đủ phụ kiện.<br>
+                  <strong>Quy trình:</strong> Nhắn fanpage/Zalo M7M kèm mã đơn + video → Shop gửi bù sản phẩm mới trong <strong>24 giờ</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bảo quản -->
+        <div class="rounded-2xl border border-slate-200 overflow-hidden">
+          <button type="button" onclick="toggleAccordion('acc-care')" class="w-full p-4 sm:p-5 text-left bg-slate-50/70 hover:bg-slate-100/70 flex items-center justify-between font-bold text-slate-800 text-sm transition-colors">
+            <span class="flex items-center gap-2"><i data-lucide="heart-handshake" class="w-4 h-4 text-pri-500"></i> Hướng Dẫn Bảo Quản Móc Khóa In 3D</span>
+            <i id="icon-acc-care" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200"></i>
+          </button>
+          <div id="acc-care" class="hidden border-t border-slate-100">
+            <div class="p-5 sm:p-6 text-xs sm:text-sm text-slate-600 space-y-3 leading-relaxed">
+              <p>Để móc khóa luôn sáng đẹp như mới:</p>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl bg-pri-50 border border-pri-100">
+                  <strong class="text-pri-800 block mb-1 text-xs">🌱 Nhựa PLA</strong>
+                  <ul class="list-disc pl-4 space-y-1 text-slate-500 text-xs">
+                    <li>Không ngâm nước nóng, để gần nguồn nhiệt.</li>
+                    <li>Tránh để cốp xe nắng gắt (>60°C làm mềm).</li>
+                    <li>Lau bằng khăn ẩm khi bẩn.</li>
+                  </ul>
+                </div>
+                <div class="p-3.5 rounded-xl bg-sky-50 border border-sky-100">
+                  <strong class="text-sky-800 block mb-1 text-xs">🛡️ Nhựa PETG</strong>
+                  <ul class="list-disc pl-4 space-y-1 text-slate-500 text-xs">
+                    <li>Chịu nhiệt tốt (80°C), thoải mái mưa nắng.</li>
+                    <li>Kháng nước 100%, rửa xà phòng bình thường.</li>
+                    <li>Chống va đập tốt, tha hồ treo ngoài trời.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="bg-slate-900 text-slate-400 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <div class="space-y-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-pri-500 to-neon-sky flex items-center justify-center text-white font-display font-bold text-sm">M7</div>
+            <span class="font-display font-bold text-white text-sm">M7M Studio</span>
+          </div>
+          <p class="text-xs leading-relaxed text-slate-500">Móc khóa in 3D thiết kế riêng. Sáng tạo không giới hạn.</p>
+          <p class="text-xs text-pri-400 font-semibold italic">"Break Limits – Create Beyond"</p>
+        </div>
+        <div>
+          <h4 class="text-white font-bold text-xs mb-3 uppercase tracking-wider">Liên kết</h4>
+          <ul class="space-y-2 text-xs">
+            <li><a href="#materials" class="hover:text-white transition-colors">So sánh chất liệu</a></li>
+            <li><a href="#products" class="hover:text-white transition-colors">Sản phẩm & Giá</a></li>
+            <li><a href="#order-form" class="hover:text-white transition-colors">Form đặt hàng</a></li>
+            <li><a href="#policy" class="hover:text-white transition-colors">Chính sách đổi trả</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-white font-bold text-xs mb-3 uppercase tracking-wider">Liên hệ</h4>
+          <ul class="space-y-2 text-xs">
+            <li class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5 text-pri-400"></i> Zalo: 09xx.xxx.xxx</li>
+            <li class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-pri-400"></i> THPT Mạc Đĩnh Chi</li>
+            <li class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-pri-400"></i> In nhanh trong 24h</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-white font-bold text-xs mb-3 uppercase tracking-wider">Quản trị</h4>
+          <p class="text-xs text-slate-500 mb-3">Xem đơn hàng, thống kê & xuất Excel.</p>
+          <button onclick="openAdminModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 flex items-center justify-center gap-2 transition-colors">
+            <i data-lucide="lock" class="w-3.5 h-3.5 text-pri-400"></i> Đăng nhập Admin
+          </button>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-6 text-center text-[11px] text-slate-600">
+        © 2026 M7M Studio · 3D Printing Keychain · THPT Mạc Đĩnh Chi
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== MODAL: THÀNH CÔNG ===== -->
+  <div id="successModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+        <i data-lucide="check-circle" class="w-7 h-7"></i>
+      </div>
+      <h3 class="font-display text-xl font-bold text-slate-900 text-center">Đặt Hàng Thành Công! 🎉</h3>
+      <p class="text-xs text-slate-400 text-center mt-1">Đơn hàng đã được ghi nhận trên hệ thống M7M</p>
+      <div id="orderSuccessSummary" class="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2 text-slate-700"></div>
+      <div class="mt-5 flex gap-2">
+        <button onclick="closeSuccessModal()" class="flex-1 h-11 rounded-xl bg-pri-600 hover:bg-pri-700 text-white font-bold text-xs transition-all">Đã hiểu</button>
+        <button onclick="takeScreenshotGuide()" class="h-11 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center gap-1.5 transition-all">
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i> Chụp lại
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: ADMIN PASSWORD ===== -->
+  <div id="adminPassModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xs w-full p-6 shadow-2xl border border-slate-100">
+      <div class="w-12 h-12 mx-auto rounded-xl bg-pri-100 text-pri-600 flex items-center justify-center mb-3">
+        <i data-lucide="shield-check" class="w-6 h-6"></i>
+      </div>
+      <h3 class="font-display text-lg font-bold text-slate-900 text-center">Admin M7M</h3>
+      <p class="text-xs text-slate-400 text-center mt-1">Nhập mật khẩu quản trị viên</p>
+      <div class="mt-4">
+        <input type="password" id="adminPasswordInput" placeholder="Mật khẩu" class="w-full h-10 px-4 rounded-xl border border-slate-200 text-sm outline-none focus:border-pri-400 text-center font-bold tracking-wider input-glow">
+        <p id="adminPassError" class="text-rose-500 text-xs text-center mt-1.5 hidden font-bold">Mật khẩu không đúng!</p>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button type="button" onclick="closeAdminPassModal()" class="flex-1 h-10 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all">Hủy</button>
+        <button type="button" onclick="verifyAdminPassword()" class="flex-1 h-10 rounded-xl bg-pri-600 hover:bg-pri-700 text-white font-bold text-xs transition-all">Đăng nhập</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN DASHBOARD ===== -->
+  <div id="adminDashboardView" class="fixed inset-0 z-50 bg-[#f8f7fc] hidden flex-col overflow-y-auto">
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-lg">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-pri-500 to-neon-sky flex items-center justify-center text-white font-display font-bold text-sm">M7</div>
+          <div>
+            <span class="font-display font-bold text-sm">M7M Admin</span>
+            <span class="ml-2 text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">Live</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="exportToExcel()" class="h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all">
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Excel</span>
+          </button>
+          <button onclick="exportToCSV()" class="h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition-all">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">CSV</span>
+          </button>
+          <button onclick="closeAdminDashboard()" class="h-9 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-bold flex items-center gap-1.5 transition-all">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Thoát
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full space-y-5 flex-1">
+      <!-- KPIs -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tổng Đơn</span>
+            <div id="statTotalOrders" class="font-display text-2xl font-bold text-slate-900 mt-1">0</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-pri-50 text-pri-500 flex items-center justify-center"><i data-lucide="shopping-cart" class="w-5 h-5"></i></div>
+        </div>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Doanh Thu</span>
+            <div id="statTotalRevenue" class="font-display text-2xl font-bold text-emerald-600 mt-1">0đ</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center"><i data-lucide="banknote" class="w-5 h-5"></i></div>
+        </div>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PLA / PETG</span>
+            <div id="statMaterialRatio" class="font-display text-lg font-bold text-slate-800 mt-1">0 / 0</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-sky-50 text-neon-sky flex items-center justify-center"><i data-lucide="layers" class="w-5 h-5"></i></div>
+        </div>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đánh Giá TB</span>
+            <div id="statAvgRating" class="font-display text-2xl font-bold text-amber-500 mt-1">5.0 ★</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-400 flex items-center justify-center"><i data-lucide="star" class="w-5 h-5"></i></div>
+        </div>
+      </div>
+
+      <!-- Webhook -->
+      <div class="bg-pri-50 border border-pri-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 bg-pri-600 text-white rounded-xl flex items-center justify-center flex-shrink-0"><i data-lucide="sheet" class="w-4 h-4"></i></div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-xs">Google Sheets Webhook</h4>
+            <p class="text-[11px] text-slate-500">Dán URL Apps Script để tự đồng bộ đơn hàng sang Sheets</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="url" id="webhookUrlInput" placeholder="https://script.google.com/macros/s/..." class="h-9 px-3 rounded-xl border border-pri-300 text-xs bg-white w-56 outline-none focus:ring-2 focus:ring-pri-400">
+          <button onclick="saveWebhookUrl()" class="h-9 px-3.5 rounded-xl bg-pri-600 hover:bg-pri-700 text-white text-xs font-bold flex-shrink-0">Lưu</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="adminSearchInput" oninput="filterOrders()" placeholder="Tìm theo tên, SĐT, lớp, trường..." class="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 text-xs outline-none input-glow focus:border-pri-400">
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="filterMaterialSelect" onchange="filterOrders()" class="h-9 px-3 rounded-xl border border-slate-200 text-xs font-semibold bg-white outline-none">
+            <option value="ALL">Tất cả</option>
+            <option value="PLA">PLA</option>
+            <option value="PETG">PETG</option>
+          </select>
+          <select id="filterStatusSelect" onchange="filterOrders()" class="h-9 px-3 rounded-xl border border-slate-200 text-xs font-semibold bg-white outline-none">
+            <option value="ALL">Mọi trạng thái</option>
+            <option value="Chờ xác nhận">Chờ xác nhận</option>
+            <option value="Đang in 3D">Đang in 3D</option>
+            <option value="Đang giao">Đang giao</option>
+            <option value="Đã hoàn thành">Đã hoàn thành</option>
+            <option value="Đã hủy">Đã hủy</option>
+          </select>
+          <button onclick="generateSampleOrders()" class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-all">+ Demo</button>
+          <button onclick="clearAllOrders()" class="h-9 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all">Xóa hết</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
+                <th class="p-3">Mã Đơn</th>
+                <th class="p-3">Thời Gian</th>
+                <th class="p-3">Khách Hàng</th>
+                <th class="p-3">Lớp/Trường</th>
+                <th class="p-3">Sản Phẩm</th>
+                <th class="p-3">Chất Liệu</th>
+                <th class="p-3">Tổng Tiền</th>
+                <th class="p-3">Trạng Thái</th>
+                <th class="p-3 text-center">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+          </table>
+        </div>
+        <div id="noOrdersMessage" class="hidden p-12 text-center text-slate-400">
+          <i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
+          <p class="font-bold text-sm text-slate-500">Chưa có đơn hàng nào</p>
+          <p class="text-xs text-slate-400 mt-1">Bấm "+ Demo" để thêm mẫu thử nghiệm</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== MODAL: CHI TIẾT ĐƠN ===== -->
+  <div id="orderDetailModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-display font-bold text-sm text-slate-900" id="detailOrderCode">Chi Tiết Đơn</h3>
+        <button onclick="closeOrderDetailModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="mt-4 space-y-3 text-xs text-slate-700" id="detailModalContent"></div>
+      <div class="mt-5 flex justify-end">
+        <button onclick="closeOrderDetailModal()" class="h-10 px-5 rounded-xl bg-slate-900 text-white font-bold text-xs">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== JAVASCRIPT ===== -->
+  <script>
+    const STORAGE_KEY='M7M_ORDERS_DATA_V2',WEBHOOK_KEY='M7M_WEBHOOK_URL_V1',ADMIN_PASS='M7M2026';
+    const PRICES={clicky:50000,classic:40000,custom:45000,combo:90000};
+    let ordersList=[],currentRating=5;
+
+    document.addEventListener('DOMContentLoaded',()=>{
+      loadOrdersFromStorage();initWebhookInput();calculateTotal();lucide.createIcons();
+      // Enter key on admin password
+      document.getElementById('adminPasswordInput').addEventListener('keydown',e=>{if(e.key==='Enter')verifyAdminPassword()});
+    });
+
+    function loadOrdersFromStorage(){
+      const s=localStorage.getItem(STORAGE_KEY);
+      if(s){try{ordersList=JSON.parse(s)}catch(e){ordersList=[]}}
+      else{
+        ordersList=[
+          {id:'M7M-2611-9801',createdAt:'2026-11-14 20:15',fullName:'Trần Minh Quân',phone:'0903124567',studentClass:'12A1',schoolName:'THPT Mạc Đĩnh Chi',shippingAddress:'Nhận tại cổng trường giờ ra chơi',qtyCombo:1,qtyClicky:0,qtyClassic:0,qtyCustom:0,customText:'',material:'PLA',orderNote:'Combo 1 Clicky + 1 MDC in sắc nét giúp mình nhé',surveyRating:5,surveyFeedback:'Mong shop làm thêm giá đỡ điện thoại',policyAgreed:true,totalQty:2,totalPrice:90000,status:'Đang in 3D'},
+          {id:'M7M-2611-8412',createdAt:'2026-11-14 21:05',fullName:'Lê Hoàng Yến Nhi',phone:'0978654321',studentClass:'11B4',schoolName:'THPT Mạc Đĩnh Chi',shippingAddress:'Số 45 Đường Hậu Giang, P.11, Q.6',qtyCombo:0,qtyClicky:0,qtyClassic:0,qtyCustom:2,customText:'YEN NHI 11B4 & SUNSHINE',material:'PETG',orderNote:'Mình gắn chìa khóa xe Vision',surveyRating:5,surveyFeedback:'Nhựa PETG rất thích hợp đi xe máy',policyAgreed:true,totalQty:2,totalPrice:90000,status:'Chờ xác nhận'}
+        ];saveOrdersToStorage();
+      }
+      updateNavbarCount();
+    }
+
+    function saveOrdersToStorage(){localStorage.setItem(STORAGE_KEY,JSON.stringify(ordersList));updateNavbarCount()}
+    function updateNavbarCount(){const e=document.getElementById('nav-order-count');if(e)e.innerText=ordersList.length}
+
+    function quickAdd(type,n){
+      const map={combo:'qtyCombo',clicky:'qtyClicky',classic:'qtyClassic',custom:'qtyCustom'};
+      const el=document.getElementById(map[type]);
+      if(el) el.value=parseInt(el.value||0)+n;
+      calculateTotal();
+      document.getElementById('order-form').scrollIntoView({behavior:'smooth'});
+      showToast(type==='combo'?'Đã thêm Combo 2 móc khóa (90k)!':'Đã thêm vào đơn hàng!');
+    }
+
+    function changeQty(id,d){const el=document.getElementById(id);let v=parseInt(el.value||0)+d;if(v<0)v=0;el.value=v;calculateTotal()}
+
+    function calculateTotal(){
+      const qCombo=parseInt(document.getElementById('qtyCombo')?document.getElementById('qtyCombo').value:0)||0;
+      const qC=parseInt(document.getElementById('qtyClicky').value)||0;
+      const qM=parseInt(document.getElementById('qtyClassic').value)||0;
+      const qU=parseInt(document.getElementById('qtyCustom').value)||0;
+
+      // Ưu đãi combo tự động: Cứ mỗi 2 chiếc Clicky mua lẻ tự động giảm 10k thành 90k/cặp!
+      let clickyDiscount = 0;
+      if (qC >= 2) {
+        clickyDiscount = Math.floor(qC / 2) * 10000;
+      }
+
+      const subCombo = qCombo * PRICES.combo;
+      const subClicky = (qC * PRICES.clicky) - clickyDiscount;
+      const subClassic = qM * PRICES.classic;
+      const subCustom = qU * PRICES.custom;
+
+      if(document.getElementById('subtotalCombo')) document.getElementById('subtotalCombo').innerText=formatVND(subCombo);
+      document.getElementById('subtotalClicky').innerText=formatVND(subClicky);
+      document.getElementById('subtotalClassic').innerText=formatVND(subClassic);
+      document.getElementById('subtotalCustom').innerText=formatVND(subCustom);
+
+      const totalQty = (qCombo * 2) + qC + qM + qU;
+      const grandTotal = subCombo + subClicky + subClassic + subCustom;
+
+      document.getElementById('summaryTotalQty').innerText=totalQty;
+      document.getElementById('summaryTotalPrice').innerText=formatVND(grandTotal);
+    }
+
+    function formatVND(n){return new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND'}).format(n)}
+
+    function setRating(v){
+      currentRating=v;document.getElementById('surveyRating').value=v;
+      const labels=['','1 sao – Cần cải thiện','2 sao – Tạm được','3 sao – Bình thường','4 sao – Rất tốt','5 sao – Tuyệt vời!'];
+      document.querySelectorAll('.star-btn').forEach((b,i)=>{
+        if(i<v){b.classList.remove('text-slate-300');b.classList.add('text-amber-400')}
+        else{b.classList.remove('text-amber-400');b.classList.add('text-slate-300')}
+      });
+      document.getElementById('ratingLabel').innerText=labels[v];
+    }
+
+    function toggleAccordion(id){
+      const c=document.getElementById(id),ic=document.getElementById('icon-'+id);
+      c.classList.toggle('hidden');ic.classList.toggle('rotate-180');
+    }
+
+    function handleFormSubmit(e){
+      e.preventDefault();
+      const qCombo=parseInt(document.getElementById('qtyCombo')?document.getElementById('qtyCombo').value:0)||0;
+      const qC=parseInt(document.getElementById('qtyClicky').value)||0;
+      const qM=parseInt(document.getElementById('qtyClassic').value)||0;
+      const qU=parseInt(document.getElementById('qtyCustom').value)||0;
+      const tQ=(qCombo * 2) + qC + qM + qU;
+      if(tQ<=0){alert('⚠️ Vui lòng chọn ít nhất 1 sản phẩm hoặc combo!');return}
+      if(!document.getElementById('policyAgreed').checked){alert('⚠️ Vui lòng xác nhận đã đọc chính sách đổi trả!');return}
+
+      const now=new Date();
+      const dt=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const material = 'PLA';
+
+      let clickyDiscount = 0;
+      if (qC >= 2) {
+        clickyDiscount = Math.floor(qC / 2) * 10000;
+      }
+      const totalPrice = (qCombo * PRICES.combo) + (qC * PRICES.clicky) - clickyDiscount + (qM * PRICES.classic) + (qU * PRICES.custom);
+
+      const order={
+        id:'M7M-'+now.getFullYear().toString().slice(-2)+String(now.getMonth()+1).padStart(2,'0')+'-'+Math.floor(1000+Math.random()*9000),
+        createdAt:dt,
+        fullName:document.getElementById('fullName').value.trim(),
+        phone:document.getElementById('phone').value.trim(),
+        studentClass:document.getElementById('studentClass').value.trim(),
+        schoolName:document.getElementById('schoolName').value.trim()||'THPT Mạc Đĩnh Chi',
+        shippingAddress:document.getElementById('shippingAddress').value.trim()||'Nhận tại trường MDC',
+        qtyCombo:qCombo,qtyClicky:qC,qtyClassic:qM,qtyCustom:qU,
+        customText:document.getElementById('customText').value.trim(),
+        material:material,
+        orderNote:document.getElementById('orderNote').value.trim(),
+        surveyRating:parseInt(document.getElementById('surveyRating').value)||5,
+        surveyFeedback:document.getElementById('surveyFeedback').value.trim(),
+        policyAgreed:true,totalQty:tQ,
+        totalPrice:totalPrice,
+        status:'Chờ xác nhận'
+      };
+
+      ordersList.unshift(order);saveOrdersToStorage();sendToWebhook(order);
+      try{confetti({particleCount:100,spread:80,origin:{y:0.65}})}catch(err){}
+      showSuccessModal(order);
+      e.target.reset();
+      if(document.getElementById('qtyCombo')) document.getElementById('qtyCombo').value=0;
+      document.getElementById('qtyClicky').value=0;document.getElementById('qtyClassic').value=0;document.getElementById('qtyCustom').value=0;
+      setRating(5);calculateTotal();
+    }
+
+    function showSuccessModal(o){
+      let items=[];
+      if(o.qtyCombo>0)items.push(`${o.qtyCombo}x Combo 2 Móc Khóa (90k)`);
+      if(o.qtyClicky>0)items.push(`${o.qtyClicky}x Clicky MDC (50k)`);
+      if(o.qtyClassic>0)items.push(`${o.qtyClassic}x Mạc Đĩnh Chi (40k)`);
+      if(o.qtyCustom>0)items.push(`${o.qtyCustom}x Custom (${o.customText||'Không ghi tên'})`);
+      document.getElementById('orderSuccessSummary').innerHTML=`
+        <div class="flex items-center justify-between font-bold text-slate-900 border-b border-slate-200 pb-2">
+          <span>Mã: <strong class="text-pri-600">${o.id}</strong></span>
+          <span class="text-emerald-600 font-bold">${formatVND(o.totalPrice)}</span>
+        </div>
+        <div class="pt-1 space-y-1">
+          <div><span class="text-slate-400">Khách:</span> ${esc(o.fullName)} (${esc(o.phone)})</div>
+          <div><span class="text-slate-400">Lớp/Trường:</span> ${esc(o.studentClass)} - ${esc(o.schoolName)}</div>
+          <div><span class="text-slate-400">Sản phẩm:</span></div>
+          <ul class="pl-2 space-y-0.5 text-slate-600 font-medium">${items.map(i=>`<li>• ${i}</li>`).join('')}</ul>
+          ${o.orderNote ? `<div><span class="text-slate-400">Ghi chú:</span> <span class="italic text-slate-600">${esc(o.orderNote)}</span></div>` : ''}
+        </div>
+        <div class="mt-2 text-[11px] text-slate-400 italic">💡 Lưu mã <strong>${o.id}</strong> hoặc chụp màn hình để nhận hàng nhé!</div>`;
+      const m=document.getElementById('successModal');m.classList.remove('hidden');m.classList.add('flex');
+    }
+    function closeSuccessModal(){const m=document.getElementById('successModal');m.classList.add('hidden');m.classList.remove('flex')}
+    function takeScreenshotGuide(){alert('📸 Nhấn [Win + Shift + S] (PC) hoặc [Nguồn + Giảm âm lượng] (ĐT) để chụp!')}
+
+    function initWebhookInput(){const s=localStorage.getItem(WEBHOOK_KEY);if(s)document.getElementById('webhookUrlInput').value=s}
+    function saveWebhookUrl(){localStorage.setItem(WEBHOOK_KEY,document.getElementById('webhookUrlInput').value.trim());alert('✅ Đã lưu Webhook!')}
+    function sendToWebhook(o){
+      const u=localStorage.getItem(WEBHOOK_KEY);if(!u)return;
+      try{fetch(u,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)})}catch(e){}
+    }
+
+    // Admin
+    function openAdminModal(){
+      document.getElementById('adminPassError').classList.add('hidden');
+      document.getElementById('adminPasswordInput').value='';
+      const m=document.getElementById('adminPassModal');m.classList.remove('hidden');m.classList.add('flex');
+      setTimeout(()=>document.getElementById('adminPasswordInput').focus(),100);
+    }
+    function closeAdminPassModal(){const m=document.getElementById('adminPassModal');m.classList.add('hidden');m.classList.remove('flex')}
+    function verifyAdminPassword(){
+      if(document.getElementById('adminPasswordInput').value===ADMIN_PASS){
+        closeAdminPassModal();renderAdminDashboard();
+        const d=document.getElementById('adminDashboardView');d.classList.remove('hidden');d.classList.add('flex');
+      }else document.getElementById('adminPassError').classList.remove('hidden');
+    }
+    function closeAdminDashboard(){const d=document.getElementById('adminDashboardView');d.classList.add('hidden');d.classList.remove('flex')}
+
+    function renderAdminDashboard(){renderStats();filterOrders()}
+
+    function renderStats(){
+      let rev=0,pla=0,petg=0,sr=0;
+      ordersList.forEach(o=>{rev+=o.totalPrice||0;if(o.material==='PLA')pla+=o.totalQty||1;else petg+=o.totalQty||1;sr+=o.surveyRating||5});
+      document.getElementById('statTotalOrders').innerText=ordersList.length;
+      document.getElementById('statTotalRevenue').innerText=formatVND(rev);
+      document.getElementById('statMaterialRatio').innerText=`${pla} / ${petg}`;
+      document.getElementById('statAvgRating').innerText=(ordersList.length>0?(sr/ordersList.length).toFixed(1):'5.0')+' ★';
+    }
+
+    function filterOrders(){
+      const s=(document.getElementById('adminSearchInput').value||'').toLowerCase();
+      const fm=document.getElementById('filterMaterialSelect').value;
+      const fs=document.getElementById('filterStatusSelect').value;
+      const f=ordersList.filter(o=>{
+        const ms=(o.fullName||'').toLowerCase().includes(s)||(o.phone||'').toLowerCase().includes(s)||(o.studentClass||'').toLowerCase().includes(s)||(o.id||'').toLowerCase().includes(s)||(o.schoolName||'').toLowerCase().includes(s);
+        return ms&&(fm==='ALL'||o.material===fm)&&(fs==='ALL'||o.status===fs);
+      });
+      renderTable(f);
+    }
+
+    function renderTable(list){
+      const tb=document.getElementById('ordersTableBody'),nm=document.getElementById('noOrdersMessage');
+      if(!list||!list.length){tb.innerHTML='';nm.classList.remove('hidden');return}
+      nm.classList.add('hidden');
+      tb.innerHTML=list.map(o=>{
+        let items=[];
+        if(o.qtyCombo>0) items.push(`${o.qtyCombo} Combo`);
+        if(o.qtyClicky>0) items.push(`${o.qtyClicky} Clicky`);
+        if(o.qtyClassic>0) items.push(`${o.qtyClassic} MDC`);
+        if(o.qtyCustom>0) items.push(`${o.qtyCustom} Custom`);
+        const mb=o.material==='PETG'?`<span class="px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 font-bold text-[10px]">PETG</span>`:`<span class="px-2 py-0.5 rounded-full bg-pri-100 text-pri-700 font-bold text-[10px]">PLA</span>`;
+        let sc='bg-slate-100 text-slate-700';
+        if(o.status==='Chờ xác nhận')sc='bg-amber-100 text-amber-800';
+        else if(o.status==='Đang in 3D')sc='bg-pri-100 text-pri-800';
+        else if(o.status==='Đang giao')sc='bg-sky-100 text-sky-800';
+        else if(o.status==='Đã hoàn thành')sc='bg-emerald-100 text-emerald-800';
+        else if(o.status==='Đã hủy')sc='bg-rose-100 text-rose-800';
+        return `<tr class="hover:bg-slate-50/70 transition-colors">
+          <td class="p-3 font-bold text-slate-800">${o.id}</td>
+          <td class="p-3 text-slate-400 whitespace-nowrap">${o.createdAt}</td>
+          <td class="p-3"><div class="font-bold text-slate-800">${esc(o.fullName)}</div><div class="text-[10px] text-slate-400">${esc(o.phone)}</div></td>
+          <td class="p-3"><span class="font-semibold">${esc(o.studentClass||'-')}</span><div class="text-[10px] text-slate-400">${esc(o.schoolName||'')}</div></td>
+          <td class="p-3 font-medium">${items.join(', ')||'0'}</td>
+          <td class="p-3">${mb}</td>
+          <td class="p-3 font-bold text-pri-600">${formatVND(o.totalPrice)}</td>
+          <td class="p-3"><select onchange="updateOrderStatus('${o.id}',this.value)" class="text-[11px] font-bold px-2 py-1 rounded-lg border border-slate-200 outline-none ${sc}">
+            <option value="Chờ xác nhận" ${o.status==='Chờ xác nhận'?'selected':''}>Chờ xác nhận</option>
+            <option value="Đang in 3D" ${o.status==='Đang in 3D'?'selected':''}>Đang in 3D</option>
+            <option value="Đang giao" ${o.status==='Đang giao'?'selected':''}>Đang giao</option>
+            <option value="Đã hoàn thành" ${o.status==='Đã hoàn thành'?'selected':''}>Đã hoàn thành</option>
+            <option value="Đã hủy" ${o.status==='Đã hủy'?'selected':''}>Đã hủy</option>
+          </select></td>
+          <td class="p-3 text-center whitespace-nowrap">
+            <button onclick="viewOrderDetail('${o.id}')" class="p-1.5 text-pri-500 hover:bg-pri-50 rounded-lg"><i data-lucide="eye" class="w-3.5 h-3.5"></i></button>
+            <button onclick="deleteOrder('${o.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg ml-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </td></tr>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function updateOrderStatus(id,s){const o=ordersList.find(x=>x.id===id);if(o){o.status=s;saveOrdersToStorage();renderAdminDashboard();showToast(`Cập nhật ${id} → "${s}"`)}}
+    function deleteOrder(id){if(confirm(`Xóa đơn ${id}?`)){ordersList=ordersList.filter(x=>x.id!==id);saveOrdersToStorage();renderAdminDashboard();showToast(`Đã xóa ${id}`)}}
+
+    function viewOrderDetail(id){
+      const o=ordersList.find(x=>x.id===id);if(!o)return;
+      document.getElementById('detailOrderCode').innerText=`Đơn #${o.id}`;
+      document.getElementById('detailModalContent').innerHTML=`
+        <div class="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-xl">
+          <div><span class="text-slate-400">Thời gian:</span> <strong>${o.createdAt}</strong></div>
+          <div><span class="text-slate-400">Trạng thái:</span> <strong class="text-pri-600">${o.status}</strong></div>
+          <div><span class="text-slate-400">Họ tên:</span> <strong>${esc(o.fullName)}</strong></div>
+          <div><span class="text-slate-400">SĐT:</span> <strong>${esc(o.phone)}</strong></div>
+          <div><span class="text-slate-400">Lớp:</span> <strong>${esc(o.studentClass)}</strong></div>
+          <div><span class="text-slate-400">Trường:</span> <strong>${esc(o.schoolName)}</strong></div>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl space-y-1">
+          <div><span class="text-slate-400">Địa chỉ:</span> ${esc(o.shippingAddress||'Không có')}</div>
+          <div><span class="text-slate-400">Custom:</span> <strong class="text-pink-500">${esc(o.customText||'Không')}</strong></div>
+          <div><span class="text-slate-400">Ghi chú:</span> ${esc(o.orderNote||'Không có')}</div>
+        </div>
+        <div class="p-3 bg-pri-50 border border-pri-100 rounded-xl space-y-1">
+          <div>Combo: ${o.qtyCombo||0} · Clicky: ${o.qtyClicky} · MDC: ${o.qtyClassic} · Custom: ${o.qtyCustom}</div>
+          <div class="text-sm font-bold text-pri-700">Tổng: ${formatVND(o.totalPrice)}</div>
+        </div>
+        <div class="p-3 bg-amber-50 rounded-xl"><span class="text-amber-700 font-bold">${o.surveyRating} ★</span> · ${esc(o.surveyFeedback||'Không có góp ý')}</div>`;
+      const m=document.getElementById('orderDetailModal');m.classList.remove('hidden');m.classList.add('flex');
+    }
+    function closeOrderDetailModal(){const m=document.getElementById('orderDetailModal');m.classList.add('hidden');m.classList.remove('flex')}
+
+    function generateSampleOrders(){
+      const ns=['Nguyễn Thị Mai Anh','Phạm Quốc Bảo','Đỗ Gia Huy','Vũ Thảo Vy','Trương Minh Khang'];
+      const cs=['10A2','11A7','12D1','12A1','10A5'];
+      const n=ns[Math.floor(Math.random()*ns.length)],c=cs[Math.floor(Math.random()*cs.length)];
+      const p='09'+Math.floor(10000000+Math.random()*90000000);
+      const o={
+        id:'M7M-2611-'+Math.floor(1000+Math.random()*9000),createdAt:'2026-11-14 '+String(Math.floor(8+Math.random()*12)).padStart(2,'0')+':30',
+        fullName:n,phone:p,studentClass:c,schoolName:'THPT Mạc Đĩnh Chi',shippingAddress:'Nhận tại cổng trường',
+        qtyCombo:1,qtyClicky:0,qtyClassic:0,qtyCustom:0,customText:'',material:'PLA',
+        orderNote:'Demo Combo 2 chiếc',surveyRating:5,surveyFeedback:'Sản phẩm rất đẹp',policyAgreed:true,totalQty:2,
+        totalPrice:90000,status:'Chờ xác nhận'
+      };
+      ordersList.unshift(o);saveOrdersToStorage();renderAdminDashboard();showToast(`Tạo demo: ${n}`);
+    }
+
+    function clearAllOrders(){if(confirm('Xóa TOÀN BỘ dữ liệu?')){ordersList=[];saveOrdersToStorage();renderAdminDashboard();showToast('Đã xóa sạch!')}}
+
+    function exportToExcel(){
+      if(!ordersList.length){alert('Không có dữ liệu!');return}
+      const d=ordersList.map((o,i)=>({'STT':i+1,'Mã Đơn':o.id,'Ngày':o.createdAt,'Họ Tên':o.fullName,'SĐT':o.phone,'Lớp':o.studentClass,'Trường':o.schoolName,'Địa Chỉ':o.shippingAddress,'Combo 90k':o.qtyCombo||0,'Clicky':o.qtyClicky,'MDC':o.qtyClassic,'Custom':o.qtyCustom,'In Tên':o.customText||'','Chất Liệu':o.material,'Tổng SL':o.totalQty,'Tổng Tiền':o.totalPrice,'Ghi Chú':o.orderNote||'','Đánh Giá':o.surveyRating,'Góp Ý':o.surveyFeedback||'','Trạng Thái':o.status}));
+      const ws=XLSX.utils.json_to_sheet(d);
+      ws['!cols']=[{wch:5},{wch:16},{wch:18},{wch:22},{wch:14},{wch:10},{wch:20},{wch:30},{wch:10},{wch:8},{wch:8},{wch:8},{wch:24},{wch:10},{wch:8},{wch:14},{wch:25},{wch:8},{wch:25},{wch:14}];
+      const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Don_Hang');
+      XLSX.writeFile(wb,`M7M_Orders_${new Date().toISOString().slice(0,10)}.xlsx`);showToast('Xuất Excel thành công!');
+    }
+
+    function exportToCSV(){
+      if(!ordersList.length){alert('Không có dữ liệu!');return}
+      const h=['STT','Mã','Ngày','Họ Tên','SĐT','Lớp','Trường','Địa Chỉ','Combo','Clicky','MDC','Custom','In Tên','Chất Liệu','Tổng SL','Tổng Tiền','Ghi Chú','Sao','Trạng Thái'];
+      const r=ordersList.map((o,i)=>[i+1,`"${o.id}"`,`"${o.createdAt}"`,`"${o.fullName.replace(/"/g,'""')}"`,`"${o.phone}"`,`"${o.studentClass||''}"`,`"${o.schoolName||''}"`,`"${(o.shippingAddress||'').replace(/"/g,'""')}"`,o.qtyCombo||0,o.qtyClicky,o.qtyClassic,o.qtyCustom,`"${(o.customText||'').replace(/"/g,'""')}"`,o.material,o.totalQty,o.totalPrice,`"${(o.orderNote||'').replace(/"/g,'""')}"`,o.surveyRating,`"${o.status}"`]);
+      const csv='\uFEFF'+h.join(',')+'\n'+r.map(x=>x.join(',')).join('\n');
+      const b=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const u=URL.createObjectURL(b),a=document.createElement('a');
+      a.href=u;a.download=`M7M_Orders_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);
+      showToast('Tải CSV thành công!');
+    }
+
+    function showToast(msg){
+      const old=document.getElementById('m7mToast');if(old)old.remove();
+      const t=document.createElement('div');t.id='m7mToast';
+      t.className='fixed bottom-4 right-4 z-[100] bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-bold border border-slate-700';
+      t.innerHTML=`<i data-lucide="check" class="w-3.5 h-3.5 text-neon-lime"></i><span>${msg}</span>`;
+      document.body.appendChild(t);lucide.createIcons();
+      setTimeout(()=>{if(t)t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},3000);
+    }
+
+    function esc(t){if(!t)return '';return String(t).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+  </script>
+</body>
+</html>
