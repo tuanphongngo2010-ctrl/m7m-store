@@ -399,7 +399,7 @@
             </div>
             <div>
               <label for="phone" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">SĐT / Zalo <span class="text-rose-500">*</span></label>
-              <input type="tel" id="phone" required placeholder="0901234567" class="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm outline-none input-glow focus:border-pri-400 transition-all bg-white">
+              <input type="tel" id="phone" required pattern="^0[0-9]{9,10}$" title="Vui lòng nhập số điện thoại hợp lệ (10–11 chữ số, bắt đầu bằng số 0)" placeholder="0901234567" class="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm outline-none input-glow focus:border-pri-400 transition-all bg-white">
             </div>
             <div>
               <label for="studentClass" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Lớp <span class="text-rose-500">*</span> <span class="font-normal normal-case text-slate-400">(Không phải HS → ghi "Không")</span></label>
@@ -424,6 +424,33 @@
             <span class="font-normal text-[11px] text-slate-400">Không mua → ghi 0</span>
           </h3>
 
+          <!-- Chọn chất liệu nhựa -->
+          <div class="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/70 space-y-2">
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Chọn Chất Liệu In 3D <span class="text-rose-500">*</span></label>
+            <div class="grid grid-cols-2 gap-2.5">
+              <label class="cursor-pointer">
+                <input type="radio" name="materialChoice" value="PLA" checked class="peer sr-only">
+                <div class="p-2.5 rounded-xl border border-slate-200 bg-white peer-checked:border-pri-600 peer-checked:bg-pri-50/70 transition-all flex items-center gap-2.5">
+                  <span class="text-base">🌱</span>
+                  <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-800">Nhựa PLA</div>
+                    <div class="text-[10px] text-slate-400 truncate">Nhẹ, màu tươi sáng</div>
+                  </div>
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="materialChoice" value="PETG" class="peer sr-only">
+                <div class="p-2.5 rounded-xl border border-slate-200 bg-white peer-checked:border-sky-500 peer-checked:bg-sky-50/70 transition-all flex items-center gap-2.5">
+                  <span class="text-base">🛡️</span>
+                  <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-800">Nhựa PETG</div>
+                    <div class="text-[10px] text-slate-400 truncate">Siêu bền, kháng nước</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <!-- Combo 2 + Tặng Quà -->
           <div class="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50/90 via-orange-50/60 to-pink-50/60 border border-amber-300/80 space-y-3">
             <div class="flex items-center justify-between gap-3">
@@ -440,13 +467,16 @@
               <div class="flex items-center gap-2 flex-shrink-0">
                 <div class="flex items-center bg-white rounded-xl border border-amber-200 overflow-hidden">
                   <button type="button" onclick="changeQty('qtyCombo',-1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-amber-50 font-bold text-sm transition-all">−</button>
-                  <input type="number" id="qtyCombo" min="0" value="0" oninput="calculateTotal()" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-amber-200 outline-none bg-transparent">
+                  <input type="number" id="qtyCombo" min="0" value="0" oninput="calculateTotal()" onblur="sanitizeQtyInput('qtyCombo')" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-amber-200 outline-none bg-transparent">
                   <button type="button" onclick="changeQty('qtyCombo',1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-amber-50 font-bold text-sm transition-all">+</button>
                 </div>
                 <span id="subtotalCombo" class="text-xs font-bold text-amber-700 w-16 text-right">0đ</span>
               </div>
             </div>
-            <input type="text" id="comboDetails" placeholder="Ghi rõ 2 mẫu trong combo (VD: 1 Clicky MDC + 1 Custom tên Minh Anh)..." class="w-full h-9 px-3 rounded-xl border border-amber-200/80 text-xs outline-none input-glow focus:border-amber-400 bg-white transition-all">
+            <div>
+              <input type="text" id="comboDetails" placeholder="Ghi rõ 2 mẫu trong combo (VD: 1 Clicky MDC + 1 Custom tên Minh Anh)..." class="w-full h-9 px-3 rounded-xl border border-amber-200/80 text-xs outline-none input-glow focus:border-amber-400 bg-white transition-all">
+              <p id="comboDetailsHint" class="hidden text-[11px] font-semibold text-amber-700 mt-1">* Bắt buộc ghi rõ 2 mẫu móc khóa khi chọn Combo</p>
+            </div>
           </div>
 
           <!-- Clicky -->
@@ -461,7 +491,7 @@
             <div class="flex items-center gap-2 flex-shrink-0">
               <div class="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <button type="button" onclick="changeQty('qtyClicky',-1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">−</button>
-                <input type="number" id="qtyClicky" min="0" value="0" oninput="calculateTotal()" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
+                <input type="number" id="qtyClicky" min="0" value="0" oninput="calculateTotal()" onblur="sanitizeQtyInput('qtyClicky')" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
                 <button type="button" onclick="changeQty('qtyClicky',1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">+</button>
               </div>
               <span id="subtotalClicky" class="text-xs font-bold text-slate-500 w-16 text-right">0đ</span>
@@ -480,7 +510,7 @@
             <div class="flex items-center gap-2 flex-shrink-0">
               <div class="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <button type="button" onclick="changeQty('qtyClassic',-1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">−</button>
-                <input type="number" id="qtyClassic" min="0" value="0" oninput="calculateTotal()" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
+                <input type="number" id="qtyClassic" min="0" value="0" oninput="calculateTotal()" onblur="sanitizeQtyInput('qtyClassic')" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
                 <button type="button" onclick="changeQty('qtyClassic',1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">+</button>
               </div>
               <span id="subtotalClassic" class="text-xs font-bold text-slate-500 w-16 text-right">0đ</span>
@@ -500,13 +530,16 @@
               <div class="flex items-center gap-2 flex-shrink-0">
                 <div class="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden">
                   <button type="button" onclick="changeQty('qtyCustom',-1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">−</button>
-                  <input type="number" id="qtyCustom" min="0" value="0" oninput="calculateTotal()" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
+                  <input type="number" id="qtyCustom" min="0" value="0" oninput="calculateTotal()" onblur="sanitizeQtyInput('qtyCustom')" class="w-10 h-8 text-center text-sm font-bold text-slate-800 border-x border-slate-200 outline-none bg-transparent">
                   <button type="button" onclick="changeQty('qtyCustom',1)" class="qty-btn w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 font-bold text-sm transition-all">+</button>
                 </div>
                 <span id="subtotalCustom" class="text-xs font-bold text-slate-500 w-16 text-right">0đ</span>
               </div>
             </div>
-            <input type="text" id="customText" placeholder="Nội dung in tên: Hoàng Long - 12A3, Lily 2008..." class="w-full h-9 px-3 rounded-xl border border-slate-200 text-xs outline-none input-glow focus:border-pri-400 bg-white transition-all">
+            <div>
+              <input type="text" id="customText" placeholder="Nội dung in tên: Hoàng Long - 12A3, Lily 2008..." class="w-full h-9 px-3 rounded-xl border border-slate-200 text-xs outline-none input-glow focus:border-pri-400 bg-white transition-all">
+              <p id="customTextHint" class="hidden text-[11px] font-semibold text-pink-600 mt-1">* Bắt buộc nhập nội dung tên muốn in cho sản phẩm Custom</p>
+            </div>
           </div>
         </div>
 
@@ -774,7 +807,7 @@
         </div>
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
           <div>
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Doanh Thu</span>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Doanh Thu (Hợp lệ)</span>
             <div id="statTotalRevenue" class="font-display text-2xl font-bold text-emerald-600 mt-1">0đ</div>
           </div>
           <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center"><i data-lucide="banknote" class="w-5 h-5"></i></div>
@@ -814,11 +847,11 @@
       <div class="bg-white p-4 rounded-2xl border border-slate-200/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div class="relative flex-1">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input type="text" id="adminSearchInput" oninput="filterOrders()" placeholder="Tìm theo tên, SĐT, lớp, trường..." class="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 text-xs outline-none input-glow focus:border-pri-400">
+          <input type="text" id="adminSearchInput" oninput="filterOrders()" placeholder="Tìm theo tên, SĐT, lớp, trường, mẫu combo/custom..." class="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 text-xs outline-none input-glow focus:border-pri-400">
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <select id="filterMaterialSelect" onchange="filterOrders()" class="h-9 px-3 rounded-xl border border-slate-200 text-xs font-semibold bg-white outline-none">
-            <option value="ALL">Tất cả</option>
+            <option value="ALL">Tất cả chất liệu</option>
             <option value="PLA">PLA</option>
             <option value="PETG">PETG</option>
           </select>
@@ -907,24 +940,56 @@
     function quickAdd(type,n){
       const map={clicky:'qtyClicky',classic:'qtyClassic',custom:'qtyCustom',combo:'qtyCombo'};
       const el=document.getElementById(map[type]);
-      el.value=parseInt(el.value||0)+n;
+      el.value=Math.max(0,(parseInt(el.value)||0)+n);
       calculateTotal();
       document.getElementById('order-form').scrollIntoView({behavior:'smooth'});
       showToast(type==='combo'?'Đã thêm Combo 2 + Quà vào đơn!':'Đã thêm vào đơn hàng!');
     }
 
-    function changeQty(id,d){const el=document.getElementById(id);let v=parseInt(el.value||0)+d;if(v<0)v=0;el.value=v;calculateTotal()}
+    function changeQty(id,d){
+      const el=document.getElementById(id);
+      const v=Math.max(0,(parseInt(el.value)||0)+d);
+      el.value=v;
+      calculateTotal();
+    }
+
+    function sanitizeQtyInput(id){
+      const el=document.getElementById(id);
+      el.value=Math.max(0,parseInt(el.value)||0);
+      calculateTotal();
+    }
 
     function calculateTotal(){
-      const qCombo=parseInt(document.getElementById('qtyCombo').value)||0;
-      const qC=parseInt(document.getElementById('qtyClicky').value)||0;
-      const qM=parseInt(document.getElementById('qtyClassic').value)||0;
-      const qU=parseInt(document.getElementById('qtyCustom').value)||0;
+      const qCombo=Math.max(0,parseInt(document.getElementById('qtyCombo').value)||0);
+      const qC=Math.max(0,parseInt(document.getElementById('qtyClicky').value)||0);
+      const qM=Math.max(0,parseInt(document.getElementById('qtyClassic').value)||0);
+      const qU=Math.max(0,parseInt(document.getElementById('qtyCustom').value)||0);
 
       document.getElementById('subtotalCombo').innerText=formatVND(qCombo*PRICES.combo);
       document.getElementById('subtotalClicky').innerText=formatVND(qC*PRICES.clicky);
       document.getElementById('subtotalClassic').innerText=formatVND(qM*PRICES.classic);
       document.getElementById('subtotalCustom').innerText=formatVND(qU*PRICES.custom);
+
+      // Hiển thị nhắc nhập chi tiết bắt buộc khi số lượng > 0
+      const comboHint=document.getElementById('comboDetailsHint');
+      const comboInput=document.getElementById('comboDetails');
+      if(qCombo>0){
+        comboHint.classList.remove('hidden');
+        comboInput.required=true;
+      }else{
+        comboHint.classList.add('hidden');
+        comboInput.required=false;
+      }
+
+      const customHint=document.getElementById('customTextHint');
+      const customInput=document.getElementById('customText');
+      if(qU>0){
+        customHint.classList.remove('hidden');
+        customInput.required=true;
+      }else{
+        customHint.classList.add('hidden');
+        customInput.required=false;
+      }
 
       const totalPieces=qC+qM+qU+(qCombo*2);
       document.getElementById('summaryTotalQty').innerText=totalPieces;
@@ -959,31 +1024,55 @@
 
     function handleFormSubmit(e){
       e.preventDefault();
-      const qCombo=parseInt(document.getElementById('qtyCombo').value)||0;
-      const qC=parseInt(document.getElementById('qtyClicky').value)||0;
-      const qM=parseInt(document.getElementById('qtyClassic').value)||0;
-      const qU=parseInt(document.getElementById('qtyCustom').value)||0;
+      const phoneVal=document.getElementById('phone').value.trim();
+      if(!/^0[0-9]{9,10}$/.test(phoneVal)){
+        alert('⚠️ Số điện thoại không hợp lệ! Vui lòng nhập 10–11 chữ số bắt đầu bằng số 0.');
+        document.getElementById('phone').focus();
+        return;
+      }
+
+      const qCombo=Math.max(0,parseInt(document.getElementById('qtyCombo').value)||0);
+      const qC=Math.max(0,parseInt(document.getElementById('qtyClicky').value)||0);
+      const qM=Math.max(0,parseInt(document.getElementById('qtyClassic').value)||0);
+      const qU=Math.max(0,parseInt(document.getElementById('qtyCustom').value)||0);
       const tQ=qC+qM+qU+(qCombo*2);
+
       if(tQ<=0){alert('⚠️ Vui lòng chọn ít nhất 1 sản phẩm!');return}
+
+      const comboDetailsVal=document.getElementById('comboDetails').value.trim();
+      if(qCombo>0 && !comboDetailsVal){
+        alert('⚠️ Vui lòng ghi rõ 2 mẫu móc khóa bạn chọn trong Combo!');
+        document.getElementById('comboDetails').focus();
+        return;
+      }
+
+      const customTextVal=document.getElementById('customText').value.trim();
+      if(qU>0 && !customTextVal){
+        alert('⚠️ Vui lòng nhập nội dung tên muốn in cho móc khóa Custom!');
+        document.getElementById('customText').focus();
+        return;
+      }
+
       if(!document.getElementById('policyAgreed').checked){alert('⚠️ Vui lòng xác nhận đã đọc chính sách đổi trả!');return}
 
       const now=new Date();
       const dt=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      const material='PLA';
+      const selectedMat=document.querySelector('input[name="materialChoice"]:checked');
+      const material=selectedMat?selectedMat.value:'PLA';
 
       const order={
         id:'M7M-'+now.getFullYear().toString().slice(-2)+String(now.getMonth()+1).padStart(2,'0')+'-'+Math.floor(1000+Math.random()*9000),
         createdAt:dt,
         fullName:document.getElementById('fullName').value.trim(),
-        phone:document.getElementById('phone').value.trim(),
+        phone:phoneVal,
         studentClass:document.getElementById('studentClass').value.trim(),
         schoolName:document.getElementById('schoolName').value.trim()||'THPT Mạc Đĩnh Chi',
         shippingAddress:document.getElementById('shippingAddress').value.trim()||'Nhận tại trường MDC',
         qtyCombo:qCombo,
-        comboDetails:document.getElementById('comboDetails').value.trim(),
+        comboDetails:comboDetailsVal,
         giftCount:qCombo,
         qtyClicky:qC,qtyClassic:qM,qtyCustom:qU,
-        customText:document.getElementById('customText').value.trim(),
+        customText:customTextVal,
         material:material,
         orderNote:document.getElementById('orderNote').value.trim(),
         surveyRating:parseInt(document.getElementById('surveyRating').value)||5,
@@ -1015,6 +1104,7 @@
         <div class="pt-1 space-y-1">
           <div><span class="text-slate-400">Khách:</span> ${esc(o.fullName)} (${esc(o.phone)})</div>
           <div><span class="text-slate-400">Lớp/Trường:</span> ${esc(o.studentClass)} - ${esc(o.schoolName)}</div>
+          <div><span class="text-slate-400">Chất liệu:</span> <strong class="text-pri-700">Nhựa ${esc(o.material)}</strong></div>
           <div><span class="text-slate-400">Sản phẩm:</span></div>
           <ul class="pl-2 space-y-0.5 text-slate-600 font-medium">${items.map(i=>`<li>• ${i}</li>`).join('')}</ul>
         </div>
@@ -1051,7 +1141,13 @@
 
     function renderStats(){
       let rev=0,pla=0,petg=0,sr=0;
-      ordersList.forEach(o=>{rev+=o.totalPrice||0;if(o.material==='PLA')pla+=o.totalQty||1;else petg+=o.totalQty||1;sr+=o.surveyRating||5});
+      ordersList.forEach(o=>{
+        sr+=o.surveyRating||5;
+        if(o.status==='Đã hủy')return;
+        rev+=o.totalPrice||0;
+        if(o.material==='PLA')pla+=o.totalQty||0;
+        else petg+=o.totalQty||0;
+      });
       document.getElementById('statTotalOrders').innerText=ordersList.length;
       document.getElementById('statTotalRevenue').innerText=formatVND(rev);
       document.getElementById('statMaterialRatio').innerText=`${pla} / ${petg}`;
@@ -1063,7 +1159,13 @@
       const fm=document.getElementById('filterMaterialSelect').value;
       const fs=document.getElementById('filterStatusSelect').value;
       const f=ordersList.filter(o=>{
-        const ms=(o.fullName||'').toLowerCase().includes(s)||(o.phone||'').toLowerCase().includes(s)||(o.studentClass||'').toLowerCase().includes(s)||(o.id||'').toLowerCase().includes(s)||(o.schoolName||'').toLowerCase().includes(s);
+        const ms=(o.fullName||'').toLowerCase().includes(s)||
+          (o.phone||'').toLowerCase().includes(s)||
+          (o.studentClass||'').toLowerCase().includes(s)||
+          (o.id||'').toLowerCase().includes(s)||
+          (o.schoolName||'').toLowerCase().includes(s)||
+          (o.comboDetails||'').toLowerCase().includes(s)||
+          (o.customText||'').toLowerCase().includes(s);
         return ms&&(fm==='ALL'||o.material===fm)&&(fs==='ALL'||o.status===fs);
       });
       renderTable(f);
@@ -1125,6 +1227,7 @@
           <div><span class="text-slate-400">Trường:</span> <strong>${esc(o.schoolName)}</strong></div>
         </div>
         <div class="p-3 bg-slate-50 rounded-xl space-y-1">
+          <div><span class="text-slate-400">Chất liệu:</span> <strong class="text-pri-700">${esc(o.material||'PLA')}</strong></div>
           <div><span class="text-slate-400">Địa chỉ:</span> ${esc(o.shippingAddress||'Không có')}</div>
           <div><span class="text-slate-400">Chi tiết Combo:</span> <strong class="text-amber-600">${esc(o.comboDetails||'Không')}</strong></div>
           <div><span class="text-slate-400">Custom:</span> <strong class="text-pink-500">${esc(o.customText||'Không')}</strong></div>
@@ -1174,7 +1277,9 @@
       if(!ordersList.length){alert('Không có dữ liệu!');return}
       const h=['STT','Mã','Ngày','Họ Tên','SĐT','Lớp','Trường','Địa Chỉ','Combo 2 (90k)','Chi Tiết Combo','Quà Tặng','Clicky','MDC','Custom','In Tên','Chất Liệu','Tổng SL','Tổng Tiền','Ghi Chú','Sao','Trạng Thái'];
       const r=ordersList.map((o,i)=>[i+1,`"${o.id}"`,`"${o.createdAt}"`,`"${o.fullName.replace(/"/g,'""')}"`,`"${o.phone}"`,`"${o.studentClass||''}"`,`"${o.schoolName||''}"`,`"${(o.shippingAddress||'').replace(/"/g,'""')}"`,o.qtyCombo||0,`"${(o.comboDetails||'').replace(/"/g,'""')}"`,o.qtyCombo||0,o.qtyClicky,o.qtyClassic,o.qtyCustom,`"${(o.customText||'').replace(/"/g,'""')}"`,o.material,o.totalQty,o.totalPrice,`"${(o.orderNote||'').replace(/"/g,'""')}"`,o.surveyRating,`"${o.status}"`]);
-      const csv='\uFEFF'+h.join(',')+'\n'+r.map(x=>x.join(',')).join('\n');
+      const csv='﻿'+h.join(',')+'
+'+r.map(x=>x.join(',')).join('
+');
       const b=new Blob([csv],{type:'text/csv;charset=utf-8;'});
       const u=URL.createObjectURL(b),a=document.createElement('a');
       a.href=u;a.download=`M7M_Orders_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);
@@ -1190,7 +1295,7 @@
       setTimeout(()=>{if(t)t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},3000);
     }
 
-    function esc(t){if(!t)return '';return String(t).replace(/[&<>"']/g,m=>({'&':'&','<':'<','>':'>','"':'"',"'":'''}[m]))}
+    function esc(t){if(!t)return '';return String(t).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
   </script>
 </body>
 </html>
